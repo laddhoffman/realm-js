@@ -15,5 +15,8 @@
     "javascript"
   ],
   "author": "Ladd Hoffman <laddhoffman@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "webpack": "^3.5.6"
+  }
 }
