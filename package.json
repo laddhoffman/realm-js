@@ -1,0 +1,19 @@
+{
+  "name": "realm",
+  "version": "1.0.0",
+  "description": "Simple 3d environment",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "github.com/laddhoffman/realm-js"
+  },
+  "keywords": [
+    "3d",
+    "javascript"
+  ],
+  "author": "Ladd Hoffman <laddhoffman@gmail.com>",
+  "license": "MIT"
+}
