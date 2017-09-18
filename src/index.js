@@ -12,8 +12,8 @@ class Page extends React.Component {
   render() {
     return (
       <div>
+        <Box x={50} y={50}/>
         <Something3d />
-        <Box x='50' y='50'/>
       </div>
     );
   }
