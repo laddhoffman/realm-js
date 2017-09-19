@@ -15,12 +15,15 @@ class Icosahedron extends React.Component {
     // React will think that things have changed when they have not.
 
     this.state = {
-    	cameraPosition: new THREE.Vector3(0, 0, 10),
+      cameraPosition: new THREE.Vector3(0, 0, 10),
     };
+
+    this.lightPosition = new THREE.Vector3(0, 0, 10);
+    this.lightTarget = new THREE.Vector3(0, 0, 0);
 
     this._onAnimate = () => {
       // we will get this callback every frame
-			this.controls.update();
+      this.controls.update();
     };
 
     /* a cubic lattice */
@@ -57,7 +60,9 @@ class Icosahedron extends React.Component {
     var vertices = icosahedron.vertices;
 
     // We can try drawing points now
-    // this.points = vertices;
+    this.points = {};
+    this.points['green'] = vertices;
+
     // OK, now let's see if we can identify the (5) nearest neighbors of each pt
     var edges = [];
     vertices.forEach(v1 => {
@@ -113,12 +118,21 @@ class Icosahedron extends React.Component {
     });
     // console.log('unique edges:', JSON.stringify(edges));
 
+    this.points2 = [];
+
     // Now, draw the lines
     edges.forEach(edge => {
       this.lines.push({
-        vertices: [edge.v1, edge.v2],
+        v1: edge.v1,
+        v2: edge.v2,
         color: edge.color
       });
+
+      let v = edge.v2.clone().sub(edge.v1);
+      let center = edge.v1.clone().add(v.divideScalar(2));
+
+      this.points[edge.color] = this.points[edge.color] || [];
+      this.points[edge.color].push(center);
     });
   }
 
@@ -134,7 +148,7 @@ ReactDOM.findDOMNode(this.refs.react3));
     controls.noPan = false;
 
     controls.staticMoving = true;
-		controls.dynamicDampingFactor = 0.3;
+    controls.dynamicDampingFactor = 0.3;
 
     controls.addEventListener('change', () => {
       this.setState({
@@ -148,40 +162,64 @@ ReactDOM.findDOMNode(this.refs.react3));
   componentWillUnmount() {
     this.controls.dispose();
     delete this.controls;
-	}
+  }
 
   render() {
     const width = window.innerWidth; // canvas width
     const height = window.innerHeight; // canvas height
 
     var lines = this.lines.map(line => {
-      let index = this.lines.indexOf(line);
-      let key = 'line-' + index;
+      let key = 'line-' + this.lines.indexOf(line);
+      let v = line.v2.clone().sub(line.v1);
+      let length = v.length();
+      let q = new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        v.clone().normalize()
+      );
+      let direction = new THREE.Euler().setFromQuaternion(q);
+      let center = line.v1.clone().add(v.divideScalar(2));
+      return (
+        <mesh key={key}
+          position={center}
+          rotation={direction}
+        >
+          <cylinderGeometry
+            height={length}
+            radiusTop={0.1}
+            radiusBottom={0.1}
+            radialSegments={4}
+          />
+          <meshLambertMaterial
+            color={line.color}
+          />
+        </mesh>
+      );
+      /*
       return (
         <line key={key}>
           <geometry
-            vertices={line.vertices}
+            vertices={[line.v1, line.v2]}
           />
           <lineBasicMaterial
             color={line.color}
           />
         </line>
-      )
+      );
+      */
     });
 
-    var points;
-    if (!_.isEmpty(this.points)) {
-      points  = (
-        <points>
+    var points = Object.keys(this.points).map(color => {
+      return (
+        <points key={'points-' + color}>
           <geometry
-            vertices={this.points}
+            vertices={this.points[color]}
           />
           <pointsMaterial
-            color='blue'
+            color={color}
           />
         </points>
       );
-    }
+    });
 
     return (<React3
       ref="react3"
@@ -191,7 +229,7 @@ ReactDOM.findDOMNode(this.refs.react3));
       alpha={true}
       clearAlpha={0}
       clearColor={0xffffff}
-			antialias
+      antialias
 
       onAnimate={this._onAnimate}
     >
@@ -205,8 +243,28 @@ ReactDOM.findDOMNode(this.refs.react3));
           far={1000}
           position={this.state.cameraPosition}
         />
+
+        <ambientLight
+          color={0x888888}
+        />
+
+        <directionalLight
+          color={0xffffff}
+          intensity={1.75}
+
+          castShadow
+
+          shadowMapWidth={1024}
+          shadowMapHeight={1024}
+
+          position={this.lightPosition}
+          lookAt={this.lightTarget}
+        />
+
         {lines}
-        {points}
+
+        {/*points*/}
+
       </scene>
     </React3>);
   }
