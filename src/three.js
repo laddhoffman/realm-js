@@ -4,21 +4,33 @@ import ReactDOM from 'react-dom';
 import * as THREE from 'three';
 import React3 from 'react-three-renderer';
 import * as _ from 'lodash';
+import {observer} from 'mobx-react';
+import {extendObservable} from 'mobx';
 
 import TrackballControls from './ref/trackball';
 
-class Icosahedron extends React.Component {
+const Icosahedron = observer(class Icosahedron extends React.Component {
   constructor(props, context) {
     super(props, context);
 
-    // construct the position vector here, because if we use 'new' within render,
-    // React will think that things have changed when they have not.
+    console.log('Icosahedron constructor(), this.props:', JSON.stringify(this.props, null, 2));
 
     this.state = {
-      cameraPosition: new THREE.Vector3(0, 0, 10),
+      cameraPosition: new THREE.Vector3(-5.722, 7.681, 2.875),
     };
 
-    this.lightPosition = new THREE.Vector3(0, 0, 10);
+    this.props.cameraInfo.position = this.state.cameraPosition;
+
+    this.lightPositions = [
+      new THREE.Vector3(-10, -10, -10),
+      new THREE.Vector3(-10, -10, 10),
+      new THREE.Vector3(-10, 10, -10),
+      new THREE.Vector3(-10, 10, 10),
+      new THREE.Vector3(10, -10, -10),
+      new THREE.Vector3(10, -10, 10),
+      new THREE.Vector3(10, 10, -10),
+      new THREE.Vector3(10, 10, 10),
+    ];
     this.lightTarget = new THREE.Vector3(0, 0, 0);
 
     this._onAnimate = () => {
@@ -106,7 +118,7 @@ class Icosahedron extends React.Component {
           index2,
           v1,
           v2: neighbor.vertex,
-          color: 'red'
+          color: 'darkred'
         });
       });
     });
@@ -150,10 +162,13 @@ ReactDOM.findDOMNode(this.refs.react3));
     controls.staticMoving = true;
     controls.dynamicDampingFactor = 0.3;
 
+    // todo: make this listener an observer?
     controls.addEventListener('change', () => {
       this.setState({
         cameraPosition: this.refs.mainCamera.position,
       });
+      this.props.cameraInfo.position = this.refs.mainCamera.position;
+      console.log(JSON.stringify(this.props.cameraInfo.position));
     });
 
     this.controls = controls;
@@ -168,8 +183,8 @@ ReactDOM.findDOMNode(this.refs.react3));
     const width = window.innerWidth; // canvas width
     const height = window.innerHeight; // canvas height
 
-    var lines = this.lines.map(line => {
-      let key = 'line-' + this.lines.indexOf(line);
+    var lines = this.lines.map((line, index) => {
+      let key = 'line-' + index;
       let v = line.v2.clone().sub(line.v1);
       let length = v.length();
       let q = new THREE.Quaternion().setFromUnitVectors(
@@ -178,6 +193,7 @@ ReactDOM.findDOMNode(this.refs.react3));
       );
       let direction = new THREE.Euler().setFromQuaternion(q);
       let center = line.v1.clone().add(v.divideScalar(2));
+      let radius = 0.067;
       return (
         <mesh key={key}
           position={center}
@@ -185,8 +201,8 @@ ReactDOM.findDOMNode(this.refs.react3));
         >
           <cylinderGeometry
             height={length}
-            radiusTop={0.1}
-            radiusBottom={0.1}
+            radiusTop={radius}
+            radiusBottom={radius}
             radialSegments={4}
           />
           <meshLambertMaterial
@@ -245,21 +261,29 @@ ReactDOM.findDOMNode(this.refs.react3));
         />
 
         <ambientLight
-          color={0x888888}
-        />
-
-        <directionalLight
           color={0xffffff}
-          intensity={1.75}
-
-          castShadow
-
-          shadowMapWidth={1024}
-          shadowMapHeight={1024}
-
-          position={this.lightPosition}
-          lookAt={this.lightTarget}
+          intensity={0.2}
         />
+
+        {
+          this.lightPositions.map((lightPosition, index) => {
+            return (
+              <directionalLight
+                key={'light-' + index}
+                color={0xffffff}
+                intensity={0.35}
+
+                castShadow
+
+                shadowMapWidth={1024}
+                shadowMapHeight={1024}
+
+                position={lightPosition}
+                lookAt={this.lightTarget}
+              />
+            );
+          })
+        }
 
         {lines}
 
@@ -268,12 +292,42 @@ ReactDOM.findDOMNode(this.refs.react3));
       </scene>
     </React3>);
   }
-}
+});
 
-export default class Something3d extends React.Component {
+// Mobx observable data store
+class CameraInfo {
+  constructor() {
+    extendObservable(this, {
+      position: new THREE.Vector3(0, 0, 0),
+    });
+  }
+};
+
+const CameraInfoView = observer(class CameraInfoView extends React.Component {
   render() {
+    if (this.props.cameraInfo.position === null) {
+      return (
+        <div>
+          No camera position data
+          <br />
+        </div>
+      );
+    }
     return (
-      <Icosahedron />
+      <div>
+        Camera x: {this.props.cameraInfo.position.x}
+        <br />
+        Camera y: {this.props.cameraInfo.position.y}
+        <br />
+        Camera z: {this.props.cameraInfo.position.z}
+        <br />
+      </div>
     );
   }
-}
+});
+
+export {
+  Icosahedron,
+  CameraInfo,
+  CameraInfoView,
+};

@@ -13,7 +13,7 @@ export default class Box extends React.Component {
           left: this.props.x,
           top: this.props.y,
         }}>
-        some content
+      {this.props.children}
       </div>
     );
   }
