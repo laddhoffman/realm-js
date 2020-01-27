@@ -15,9 +15,6 @@ class Page extends React.Component {
   render() {
     return (
       <div>
-        <Box x={50} y={50}>
-          <CameraInfoView cameraInfo={cameraInfo} />
-        </Box>
         <Icosahedron cameraInfo={cameraInfo} />
       </div>
     );

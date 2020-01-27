@@ -38,8 +38,9 @@ const Icosahedron = observer(class Icosahedron extends React.Component {
       this.controls.update();
     };
 
-    /* a cubic lattice */
     this.lines = [];
+
+    /* a cubic lattice */
 //     var i, j, k;
 //     for (i = -10; i <= 10; i++) {
 //       for (j = -10; j <= 10; j++) {
@@ -65,10 +66,12 @@ const Icosahedron = observer(class Icosahedron extends React.Component {
 //     }
 
     // let's draw an icosahedron frame.
+    drawIcosahedron();
     // there's a built-in method to get the vertex locations of an icosahedron.
     // we can start with that and then work on drawwing the wireframe.
     var radius = 5;
-    var icosahedron = new THREE.IcosahedronGeometry(radius);
+    var detail = 1;
+    var icosahedron = new THREE.IcosahedronGeometry(radius, detail);
     var vertices = icosahedron.vertices;
 
     // We can try drawing points now
@@ -325,6 +328,113 @@ const CameraInfoView = observer(class CameraInfoView extends React.Component {
     );
   }
 });
+
+class myIcosahedron {
+  constructor(radius = 5, detail = 1) {
+    this.edges = [];
+    this.vertices = [];
+
+    // there's a built-in method to get the vertex locations of an icosahedron.
+    // we can start with that and then work on drawwing the wireframe.
+    var icosahedron = new THREE.IcosahedronGeometry(radius, detail);
+    var vertices = icosahedron.vertices;
+
+    // We can try drawing points now
+    this.points = {};
+    this.points['green'] = vertices;
+
+    // OK, now let's see if we can identify the (5) nearest neighbors of each pt
+    var edges = [];
+    vertices.forEach(v1 => {
+      let index1 = vertices.indexOf(v1);
+      // get distance to each other vertex
+      let neighbors = _.chain(vertices)
+        .filter(v2 => {
+          return vertices.indexOf(v1) !== vertices.indexOf(v2);
+        })
+        .map(v2 => {
+          let index2 = vertices.indexOf(v2);
+          // console.log('vertex', index1, v1, 'to', index2, v2, 'dist:', v1.distanceTo(v2));
+          return {
+            dist: v1.distanceTo(v2),
+            index: index2,
+            vertex: v2
+          };
+        })
+        // sort and select the 5 nearest neighbors
+        .sortBy(['dist'])
+        .value();
+      // console.log('vertex', index1, 'neighbors:', JSON.stringify(neighbors));
+
+      // Connect to 5 nearest neighbors with blue
+      neighbors.slice(0,5).forEach(neighbor => {
+        let index2 = neighbor.index;
+        edges.push({
+          index1,
+          index2,
+          v1,
+          v2: neighbor.vertex,
+          color: 'blue'
+        });
+      });
+
+      // Connect to the next 5 nearest neighbors with red
+      neighbors.slice(5,10).forEach(neighbor => {
+        let index2 = neighbor.index;
+        edges.push({
+          index1,
+          index2,
+          v1,
+          v2: neighbor.vertex,
+          color: 'darkred'
+        });
+      });
+    });
+    // console.log('edges:', JSON.stringify(edges));
+
+    // Each edge will have been counted twice
+    edges = _.uniqBy(edges, edge => {
+      return [edge.index1, edge.index2].sort().join('-');
+    });
+
+  }
+
+  getEdges() {
+    return this.edges;
+  }
+
+  getVerices() {
+    return this.edges;
+  }
+
+  concat() {
+    // TODO?
+  }
+
+}
+
+const drawIcosahedron = () => {
+
+    // console.log('unique edges:', JSON.stringify(edges));
+
+    this.points2 = [];
+
+    // Now, draw the lines
+    edges.forEach(edge => {
+      this.lines.push({
+        v1: edge.v1,
+        v2: edge.v2,
+        color: edge.color
+      });
+
+      let v = edge.v2.clone().sub(edge.v1);
+      let center = edge.v1.clone().add(v.divideScalar(2));
+
+      this.points[edge.color] = this.points[edge.color] || [];
+      this.points[edge.color].push(center);
+    });
+};
+
 
 export {
   Icosahedron,
