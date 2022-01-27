@@ -37,6 +37,6 @@
     "react": "^15.6.1",
     "react-dom": "^15.6.1",
     "react-three-renderer": "^3.2.1",
-    "three": "^0.87.1"
+    "three": "^0.137.0"
   }
 }
